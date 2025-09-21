@@ -270,6 +270,8 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "pydantic-ai" },
+    { name = "pydantic-settings" },
+    { name = "pyyaml" },
 ]
 
 [package.dev-dependencies]
@@ -280,7 +282,11 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "pydantic-ai", specifier = ">=1.0.10" }]
+requires-dist = [
+    { name = "pydantic-ai", specifier = ">=1.0.10" },
+    { name = "pydantic-settings", specifier = ">=2.10.1" },
+    { name = "pyyaml", specifier = ">=6.0.0" },
+]
 
 [package.metadata.requires-dev]
 dev = [

@@ -1,0 +1,14 @@
+model: "anthropic:claude-sonnet-4-0"
+
+name: "api-research-agent"
+
+instructions: |
+    You are a helpful customer support agent.
+    Always be polite and professional.
+    Ask clarifying questions when needed.
+
+model_settings:
+    timeout: 30.0
+
+tools: []
+builtin_tools: []
