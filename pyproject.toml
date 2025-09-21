@@ -16,7 +16,7 @@ dev = [
 ]
 
 [project.scripts]
-agent = "dzai.agent:main"
+agent = "dzai.agent:cli"
 
 [build-system]
 requires = ["uv_build>=0.8.19,<0.9.0"]

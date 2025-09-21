@@ -14,5 +14,12 @@ async def main() -> None:
     print(result.output)
 
 
-if __name__ == "__main__":
+def cli() -> None:
+    """
+    Placeholder function that we will later add click command to.
+    """
     asyncio.run(main())
+
+
+if __name__ == "__main__":
+    cli()
