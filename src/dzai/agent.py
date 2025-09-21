@@ -30,7 +30,7 @@ class AgentSpec(BaseModel):
 
     # Core parameters
     model: str = Field(..., description="LLM model identifier")
-    instructions: str | list[str] | None = None
+    instructions: str
 
     # Advanced configuration
     name: str | None = None
@@ -57,14 +57,9 @@ async def main(agent_name: str, query: str) -> None:
     )
     agent_spec = AgentSpec.from_config(config_file_yml)
 
-    # Convert instructions list to string if needed
-    instructions = agent_spec.instructions
-    if isinstance(instructions, list):
-        instructions = "\n".join(instructions)
-
     agent = Agent(
         model=agent_spec.model,
-        instructions=instructions,
+        instructions=agent_spec.instructions,
         name=agent_spec.name,
     )
 
