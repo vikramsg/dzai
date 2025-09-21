@@ -1,5 +1,6 @@
 # Temp dirs and files
 .docs
+outputs
 ToDo.md
 
 # Env variables
