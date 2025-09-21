@@ -21,6 +21,7 @@ class Settings(BaseSettings):
 class ModelSettingsSpec(BaseModel):
     """Configuration for model-specific settings"""
 
+    # TODO: Use this setting to configure timeouts
     timeout: float | None = None
 
 
@@ -75,7 +76,13 @@ async def main(agent_name: str, query: str) -> None:
 @click.argument("agent_name", required=True)
 @click.option("-q", "--query", help="Query to send to the agent", required=True)
 def cli(agent_name: str, query: str) -> None:
-    """Run an agent from the agents folder or execute test mode"""
+    """
+    Run an agent from the agents folder
+
+    Usage:
+        # Note that name after agent is the name of the yml file in the agents folder.
+        uv run agent test_agent_config -q "hello"
+    """
     asyncio.run(main(agent_name, query))
 
 
