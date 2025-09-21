@@ -1,0 +1,69 @@
+[project]
+name = "dzai"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "pydantic-ai>=1.0.10",
+]
+
+[build-system]
+requires = ["uv_build>=0.8.19,<0.9.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "prek>=0.2.1",
+    "ruff>=0.13.1",
+    "ty>=0.0.1a21",
+]
+
+[tool.ruff]
+# Same as Black.
+line-length = 120
+indent-width = 4
+
+# Assume Python 3.12
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+    "E", # pycodestyle
+    "W",  # pycodestyle warnings
+    "F", # pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "N",  # pep8-naming
+    "Q", # flake8-quotes
+    "C4", # flake8-comprehensions
+    "SIM", # flake8-simplify
+    "PTH", # flake8-use-pathlib
+    "RUF", # ruff-specific-rules
+    "BLE", # Blind except
+    "ANN", # Annotations
+    "PERF", # Perflint
+    "D103", # "Missing docstring in public function"
+    "ASYNC", # "async linting"
+]
+ignore = []
+
+exclude = []
+
+# Allow fix for all enabled rules (when `--fix`) is provided.
+fixable = ["ALL"]
+unfixable = []
+
+[tool.ruff.format]
+# Like Black, use double quotes for strings.
+quote-style = "double"
+
+# Like Black, indent with spaces, rather than tabs.
+indent-style = "space"
+
+# Like Black, respect magic trailing commas.
+skip-magic-trailing-comma = false
+
+# Like Black, automatically detect the appropriate line ending.
+line-ending = "auto"
