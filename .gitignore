@@ -1,5 +1,10 @@
+# Temp dirs and files
+.docs
+ToDo.md
+
 # Env variables
 .env
+.envrc
 
 # Python specific stuff
 .venv

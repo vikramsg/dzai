@@ -26,9 +26,9 @@
     },
     "mounts": [
         "type=bind,source=${localEnv:HOME}/.ssh,target=/home/vscode/.ssh_host,consistency=cached,readonly=true",
-        "type=bind,source=${localEnv:HOME}/.gitconfig,target=/home/vscode/.gitconfig"
+        "type=bind,source=${localEnv:HOME}/.gitconfig,target=/home/vscode/.gitconfig",
+        "source=${localEnv:HOME}/.claude.json,target=/home/vscode/.claude.json,type=bind,consistency=cached"
     ],
     "appPort": ["2222:2222"],
-    // -l: start a login shell, -c: start executing and then exit
-    "postCreateCommand": "bash -lc .devcontainer/postCreate.sh"
+    "postCreateCommand": ".devcontainer/postCreate.sh"
 }
