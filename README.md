@@ -1,6 +1,6 @@
 # dzai
 
-An attempt at an agent that does Python like I do! 
+An attempt at an agent that does Python like I do!
 
 ## Installation
 
@@ -20,4 +20,7 @@ uv add --group dev prek
 
 # Install the hook
 uv run prek install
+
+# Run the hook, although this should be automatic after installing prek
+uv run prek run
 ```

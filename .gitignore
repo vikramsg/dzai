@@ -1,1 +1,9 @@
+# Env variables
 .env
+
+# Python specific stuff
+.venv
+.ruff_cache
+dist
+.ropeproject
+__pycache__

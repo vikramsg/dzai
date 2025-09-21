@@ -29,5 +29,6 @@
         "type=bind,source=${localEnv:HOME}/.gitconfig,target=/home/vscode/.gitconfig"
     ],
     "appPort": ["2222:2222"],
-    "postCreateCommand": "sed -i '1i export ZSH_DOTENV_PROMPT=false' ~/.zshrc"
+    // -l: start a login shell, -c: start executing and then exit
+    "postCreateCommand": "bash -lc .devcontainer/postCreate.sh"
 }
