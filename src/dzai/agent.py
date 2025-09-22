@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Sequence
 from pathlib import Path
 
 import click
@@ -8,8 +9,17 @@ import yaml
 from pydantic import BaseModel, Field
 from pydantic.types import SecretStr
 from pydantic_ai import Agent
+from pydantic_ai.builtin_tools import AbstractBuiltinTool, WebSearchTool
+from pydantic_ai.models.anthropic import AnthropicModel
+from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.providers.anthropic import AnthropicProvider
+from pydantic_ai.providers.openai import OpenAIProvider
 from pydantic_settings import BaseSettings
 from pydantic_settings.main import SettingsConfigDict
+
+from dzai.logging_utils import logger
+from dzai.retry_utils import create_retrying_client
+from dzai.tools.registry import todo_toolset
 
 
 class Settings(BaseSettings):
@@ -39,6 +49,10 @@ class AgentSpec(BaseModel):
     # Model settings
     model_settings: ModelSettingsSpec | None = None
 
+    # Tools configuration
+    tools: list[str] = []
+    builtin_tools: list[str] = []
+
     @staticmethod
     def from_config(config_file: Path) -> AgentSpec:
         """Load agent specification from YAML file"""
@@ -46,9 +60,23 @@ class AgentSpec(BaseModel):
             yaml_spec = yaml.safe_load(cf)
             return AgentSpec.model_validate(yaml_spec)
 
+    @property
+    def provider_model(self) -> AnthropicModel | OpenAIChatModel:
+        provider = self.model.split(":")[0]
+        model = self.model.split(":")[1]
+        client = create_retrying_client()
+        match provider:
+            case "anthropic":
+                return AnthropicModel(model, provider=AnthropicProvider(http_client=client))
+            case "openai":
+                return OpenAIChatModel(model, provider=OpenAIProvider(http_client=client))
+            case _:
+                raise ValueError(f"Unsupported model type: {self.model}")
+
 
 async def main(agent_name: str, query: str) -> None:
     """Load and run agent from YAML configuration"""
+
     agents_dir = Path("agents")
     config_file_yml = agents_dir / f"{agent_name}.yml"
 
@@ -57,11 +85,22 @@ async def main(agent_name: str, query: str) -> None:
     )
     agent_spec = AgentSpec.from_config(config_file_yml)
 
+    # Prepare builtin tools
+    builtin_tools: Sequence[AbstractBuiltinTool] = []
+    if "web_search" in agent_spec.builtin_tools:
+        builtin_tools.append(WebSearchTool())
+
     agent = Agent(
-        model=agent_spec.model,
+        model=agent_spec.provider_model,
         instructions=agent_spec.instructions,
         name=agent_spec.name,
+        # TODO: This should be from the registry
+        toolsets=[todo_toolset()],
+        # TODO: This should be from the registry
+        builtin_tools=builtin_tools,
     )
+
+    logger.info(f"Starting agent run for Agent: {agent_spec.name}.")
 
     result = await agent.run(query)
     print(result.output)
