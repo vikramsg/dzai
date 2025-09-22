@@ -13,7 +13,7 @@ curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
 nvm install 22
 
 # Make zsh load .env by default
-echo 'export ZSH_DOTENV_PROMPT=false' >> ~/.zshrc
+echo -e 'ZSH_DOTENV_PROMPT=false\n'"$(cat ~/.zshrc 2>/dev/null || echo '')" > ~/.zshrc
 
 echo "Installing CLI tools..."
 npm install -g @openai/codex @anthropic-ai/claude-code
