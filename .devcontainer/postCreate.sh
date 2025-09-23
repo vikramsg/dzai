@@ -3,7 +3,7 @@
 set -ex
 
 # Install neovim for some sane editing in the terminal
-sudo apt update && sudo apt install neovim
+sudo apt update && sudo apt install -y neovim
 
 # Download and install nvm:
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
@@ -17,5 +17,8 @@ echo -e 'ZSH_DOTENV_PROMPT=false\n'"$(cat ~/.zshrc 2>/dev/null || echo '')" > ~/
 
 echo "Installing CLI tools..."
 npm install -g @openai/codex @anthropic-ai/claude-code
+
+echo "Fixing workspace ownership..."
+sudo chown -R vscode:vscode /workspaces
 
 echo "postCreate script completed successfully!"
