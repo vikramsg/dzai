@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Sequence
+from datetime import datetime
 from pathlib import Path
 
 import click
@@ -14,6 +15,7 @@ from pydantic_ai.models.anthropic import AnthropicModel
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.anthropic import AnthropicProvider
 from pydantic_ai.providers.openai import OpenAIProvider
+from pydantic_ai.usage import RunUsage
 from pydantic_settings import BaseSettings
 from pydantic_settings.main import SettingsConfigDict
 
@@ -77,8 +79,7 @@ class AgentSpec(BaseModel):
 async def main(agent_name: str, query: str) -> None:
     """Load and run agent from YAML configuration"""
 
-    agents_dir = Path("agents")
-    config_file_yml = agents_dir / f"{agent_name}.yml"
+    config_file_yml = Path("agents") / f"{agent_name}.yml"
 
     assert config_file_yml.exists(), (
         f"Error: Agent configuration file '{agent_name}.yml'  not found in agents/ directory."
@@ -101,9 +102,20 @@ async def main(agent_name: str, query: str) -> None:
     )
 
     logger.info(f"Starting agent run for Agent: {agent_spec.name}.")
+    usage = RunUsage()
+    result = await agent.run(query, usage=usage)
 
-    result = await agent.run(query)
-    print(result.output)
+    logger.info(
+        f"Input tokens: {usage.input_tokens}, Output tokens: {usage.output_tokens}, "
+        f"Total tokens: {usage.total_tokens}, Details: {usage.details}"
+    )
+
+    # Write output to file
+    output_file = Path("outputs") / f"output_{datetime.now().isoformat(timespec='seconds')}.md"
+    with output_file.open("w") as of:
+        of.write(result.output)
+
+    logger.info(f"Output written to {output_file}")
 
 
 @click.command()
