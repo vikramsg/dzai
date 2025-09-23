@@ -115,7 +115,14 @@ async def main(agent_name: str, query: str) -> None:
     with output_file.open("w") as of:
         of.write(result.output)
 
-    logger.info(f"Output written to {output_file}")
+    logger.info(f"Output written to {output_file}.")
+
+    # Write message history to file
+    messages_file = Path("outputs") / f"messages_{datetime.now().isoformat(timespec='seconds')}.json"
+    with messages_file.open("wb") as mf:
+        mf.write(result.all_messages_json())
+
+    logger.info(f"Message history written to {messages_file}.")
 
 
 @click.command()
