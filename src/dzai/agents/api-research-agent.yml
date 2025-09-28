@@ -32,7 +32,8 @@ instructions: |
     <review>
     Review your output. Make sure the final report passes the review.
     - Does the report have code examples.
-    - Do the code examples and relevant text have inline citations.
+    - Do the code examples and relevant text have inline citations/links.
+      - Does the reference section have links to the source material like URL of the relevant documentation or Github issue.
     - Do the examples use the latest API.
     </review>
 
