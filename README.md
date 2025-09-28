@@ -17,6 +17,11 @@ uv run dzai api-research-agent -q "Query"
 uv run dzai api-research-agent -q "How do I show thinking in logs when using pydantic AI - https://github.com/pydantic/pydantic-ai"
 ```
 
+## Agents
+
+Agents are defined via YAML files located in `src/dzai/agents`.
+Adding agents is as simple as adding a new YAML file in the folder, but please add the agent name to the help string in `cli.py`.
+
 ## prek
 
 This is a Rust based pre-commit.
