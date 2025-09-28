@@ -1,34 +1,35 @@
 {
-    "name": "devcontainer",
-    "image": "mcr.microsoft.com/devcontainers/python:3.13",
-    "runArgs": ["--env-file", ".env"],
-    "containerEnv": {
-        "SHELL": "/bin/zsh"
+  "name": "devcontainer",
+  "image": "mcr.microsoft.com/devcontainers/python:3.13",
+  "runArgs": ["--env-file", ".env"],
+  "containerEnv": {
+    "SHELL": "/bin/zsh"
+  },
+  "remoteUser": "vscode",
+  "containerUser": "vscode",
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "username": "vscode",
+      "uid": "1000",
+      "gid": "1000",
+      "installSudo": "true"
     },
-    "remoteUser": "vscode",
-    "features": {
-        "ghcr.io/devcontainers/features/common-utils:2": {
-            "username": "vscode",
-            "uid": "1000",
-            "gid": "1000",
-            "installSudo": "true"
-        },
-        "ghcr.io/devcontainers/features/sshd:1": {
-            "version": "latest",
-            "serverPort": 2222,
-            "passwordAuth": "false"
-        },
-        "ghcr.io/jsburckhardt/devcontainer-features/uv:1": {},
-        "ghcr.io/devcontainers-contrib/features/zsh-plugins:0": {
-            "plugins": "python git zsh-autosuggestions zsh-syntax-highlighting dotenv",
-            "omzPlugins": "https://github.com/zsh-users/zsh-autosuggestions.git https://github.com/zsh-users/zsh-syntax-highlighting.git"
-        }
+    "ghcr.io/devcontainers/features/sshd:1": {
+      "version": "latest",
+      "serverPort": 2222,
+      "passwordAuth": "false"
     },
-    "mounts": [
-        "type=bind,source=${localEnv:HOME}/.ssh,target=/home/vscode/.ssh_host,consistency=cached,readonly=true",
-        "type=bind,source=${localEnv:HOME}/.gitconfig,target=/home/vscode/.gitconfig",
-        "source=${localEnv:HOME}/.claude.json,target=/home/vscode/.claude.json,type=bind,consistency=cached"
-    ],
-    "appPort": ["2222:2222"],
-    "postCreateCommand": ".devcontainer/postCreate.sh"
+    "ghcr.io/jsburckhardt/devcontainer-features/uv:1": {},
+    "ghcr.io/devcontainers-contrib/features/zsh-plugins:0": {
+      "plugins": "python git zsh-autosuggestions zsh-syntax-highlighting dotenv",
+      "omzPlugins": "https://github.com/zsh-users/zsh-autosuggestions.git https://github.com/zsh-users/zsh-syntax-highlighting.git"
+    }
+  },
+  "mounts": [
+    "type=bind,source=${localEnv:HOME}/.ssh,target=/home/vscode/.ssh_host,consistency=cached,readonly=true",
+    "type=bind,source=${localEnv:HOME}/.gitconfig,target=/home/vscode/.gitconfig",
+    "source=${localEnv:HOME}/.claude.json,target=/home/vscode/.claude.json,type=bind,consistency=cached"
+  ],
+  "appPort": ["2222:2222"],
+  "postCreateCommand": ".devcontainer/postCreate.sh"
 }

@@ -22,12 +22,19 @@ instructions: |
     </research_process>
 
     <output>
-    At the end of your research, create a markdown report with timestamp in the outputs/ directory with:
+    At the end of your research, create a markdown report with:
     - Summary of findings
     - Code examples
     - Common pitfalls and solutions
-    - Links to relevant resources
+    - Links to relevant resources, preferably inline citations.
     </output>
+
+    <review>
+    Review your output. Make sure the final report passes the review.
+    - Does the report have code examples.
+    - Do the code examples and relevant text have inline citations.
+    - Do the examples use the latest API.
+    </review>
 
     NOTE:
       Do not ask clarifying questions. Complete the research, and create the required output.
