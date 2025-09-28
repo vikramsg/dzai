@@ -125,7 +125,10 @@ async def main(agent_name: str, query: str) -> None:
     logger.info(f"Message history written to {messages_file}.")
 
 
-@click.command()
+@click.command(
+    help="Run an AI agent.\n\nAgents available are:\n\n  api-research-agent: To research a lib/API on implementation.",
+    no_args_is_help=True,
+)
 @click.argument("agent_name", required=True)
 @click.option("-q", "--query", help="Query to send to the agent", required=True)
 def cli(agent_name: str, query: str) -> None:
