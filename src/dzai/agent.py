@@ -112,6 +112,7 @@ async def main(agent_name: str, query: str) -> None:
 
     # Write output to file
     output_file = Path("outputs") / f"output_{datetime.now().isoformat(timespec='seconds')}.md"
+    output_file.parent.mkdir(parents=True, exist_ok=True)
     with output_file.open("w") as of:
         of.write(result.output)
 
