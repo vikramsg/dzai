@@ -79,10 +79,10 @@ class AgentSpec(BaseModel):
 async def main(agent_name: str, query: str) -> None:
     """Load and run agent from YAML configuration"""
 
-    config_file_yml = Path("agents") / f"{agent_name}.yml"
+    config_file_yml = Path(__file__).resolve().parent.parent.parent / "agents" / f"{agent_name}.yml"
 
     assert config_file_yml.exists(), (
-        f"Error: Agent configuration file '{agent_name}.yml'  not found in agents/ directory."
+        f"Error: Agent configuration file '{agent_name}.yml'  not found in {config_file_yml.parent} directory."
     )
     agent_spec = AgentSpec.from_config(config_file_yml)
 
