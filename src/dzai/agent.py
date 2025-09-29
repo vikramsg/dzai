@@ -149,6 +149,7 @@ async def main(agent_name: str, query: str) -> None:
 
     # Prepare builtin tools
     builtin_tools: Sequence[AbstractBuiltinTool] = []
+    # ToDo: Make this an enum and the loading should be part of AgentSpec validation
     if "web_search" in agent_spec.builtin_tools:
         builtin_tools.append(WebSearchTool())
 
