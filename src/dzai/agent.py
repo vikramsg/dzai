@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from datetime import datetime
 from pathlib import Path
 
@@ -9,7 +9,7 @@ import click
 import yaml
 from pydantic import BaseModel, Field
 from pydantic.types import SecretStr
-from pydantic_ai import Agent
+from pydantic_ai import Agent, RunContext
 from pydantic_ai.builtin_tools import AbstractBuiltinTool, WebSearchTool
 from pydantic_ai.models.anthropic import AnthropicModel
 from pydantic_ai.models.google import GoogleModel
@@ -41,6 +41,20 @@ class ModelSettingsSpec(BaseModel):
     timeout: float | None = None
 
 
+class AgentAsTool(BaseModel):
+    agent: AgentSpec
+
+    async def run_tool(self, ctx: RunContext[None], query: str) -> str:
+        """
+        Run the agent as tool.
+        """
+        result = await self.agent.run(
+            query,
+            usage=ctx.usage,  # This preserves token counting
+        )
+        return result.output
+
+
 class AgentSpec(BaseModel):
     """Enhanced specification for pydantic-ai Agent configuration"""
 
@@ -58,6 +72,9 @@ class AgentSpec(BaseModel):
     # Tools configuration
     tools: list[str] = []
     builtin_tools: list[str] = []
+
+    # Agents as tools
+    agent_tools: list[str] = []
 
     # Env variables
     anthropic_api_key: SecretStr | None = None
@@ -92,6 +109,30 @@ class AgentSpec(BaseModel):
                 return GoogleModel(model, provider=GoogleProvider(client=client))
             case _:
                 raise ValueError(f"Unsupported model type: {self.model}")
+
+    def as_tool_function(self) -> Callable:
+        """Convert this agent spec into a tool function"""
+
+        async def agent_tool(ctx: RunContext[None], query: str) -> str:
+            agent = Agent(
+                model=self.provider_model,
+                instructions=self.instructions,
+                name=self.name,
+            )
+
+            result = await agent.run(query, usage=ctx.usage)
+            return result.output
+
+        agent_tool.__name__ = f"{self.name.lower().replace('-', '_')}_agent"
+        agent_tool.__doc__ = f"""
+            Run the {self.name} agent.
+            {self.instructions[:200]}...
+
+            Args:
+                query: Query to send to the agent
+            """
+
+        return agent_tool
 
 
 async def main(agent_name: str, query: str) -> None:
