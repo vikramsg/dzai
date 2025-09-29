@@ -12,20 +12,24 @@ from pydantic.types import SecretStr
 from pydantic_ai import Agent
 from pydantic_ai.builtin_tools import AbstractBuiltinTool, WebSearchTool
 from pydantic_ai.models.anthropic import AnthropicModel
+from pydantic_ai.models.google import GoogleModel
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.anthropic import AnthropicProvider
+from pydantic_ai.providers.google import GoogleProvider
 from pydantic_ai.providers.openai import OpenAIProvider
 from pydantic_ai.usage import RunUsage
 from pydantic_settings import BaseSettings
 from pydantic_settings.main import SettingsConfigDict
 
 from dzai.logging_utils import logger
-from dzai.retry_utils import create_retrying_client
+from dzai.retry_utils import create_retrying_client, google_retrying_client
 from dzai.tools.registry import todo_toolset
 
 
 class Settings(BaseSettings):
     ANTHROPIC_API_KEY: SecretStr = SecretStr("some-secret")
+
+    GEMINI_API_KEY: SecretStr = SecretStr("some-secret")
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
@@ -55,15 +59,24 @@ class AgentSpec(BaseModel):
     tools: list[str] = []
     builtin_tools: list[str] = []
 
+    # Env variables
+    anthropic_api_key: SecretStr | None = None
+
+    gemini_api_key: SecretStr | None = None
+
     @staticmethod
-    def from_config(config_file: Path) -> AgentSpec:
+    def from_config(
+        config_file: Path, *, anthropic_api_key: SecretStr | None = None, gemini_api_key: SecretStr | None = None
+    ) -> AgentSpec:
         """Load agent specification from YAML file"""
         with config_file.open() as cf:
             yaml_spec = yaml.safe_load(cf)
-            return AgentSpec.model_validate(yaml_spec)
+            return AgentSpec.model_validate(
+                {**yaml_spec, "gemini_api_key": gemini_api_key, "anthropic_api_key": anthropic_api_key}
+            )
 
     @property
-    def provider_model(self) -> AnthropicModel | OpenAIChatModel:
+    def provider_model(self) -> AnthropicModel | OpenAIChatModel | GoogleModel:
         provider = self.model.split(":")[0]
         model = self.model.split(":")[1]
         client = create_retrying_client()
@@ -72,6 +85,11 @@ class AgentSpec(BaseModel):
                 return AnthropicModel(model, provider=AnthropicProvider(http_client=client))
             case "openai":
                 return OpenAIChatModel(model, provider=OpenAIProvider(http_client=client))
+            case "google":
+                # This is not amazing right now. We can't do both user tools and built in tools!
+                assert self.gemini_api_key is not None, "`GEMINI_API_KEY` is not set."
+                client = google_retrying_client(api_key=self.gemini_api_key)
+                return GoogleModel(model, provider=GoogleProvider(client=client))
             case _:
                 raise ValueError(f"Unsupported model type: {self.model}")
 
@@ -81,10 +99,12 @@ async def main(agent_name: str, query: str) -> None:
 
     config_file_yml = Path(__file__).resolve().parent / "agents" / f"{agent_name}.yml"
 
+    settings = Settings()
+
     assert config_file_yml.exists(), (
         f"Error: Agent configuration file '{agent_name}.yml'  not found in {config_file_yml.parent} directory."
     )
-    agent_spec = AgentSpec.from_config(config_file_yml)
+    agent_spec = AgentSpec.from_config(config_file_yml, gemini_api_key=settings.GEMINI_API_KEY)
 
     # Prepare builtin tools
     builtin_tools: Sequence[AbstractBuiltinTool] = []
