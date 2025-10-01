@@ -54,6 +54,6 @@ def google_retrying_client(*, api_key: SecretStr, async_retrying_transport: Call
     return Client(
         api_key=api_key.get_secret_value(),
         http_options=HttpOptions(
-            async_client_args={"transport": transport}  # Pass transport through client args
+            async_client_args={"transport": transport}
         ),
     )
