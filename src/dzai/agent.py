@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from collections.abc import Callable, Sequence
 from datetime import datetime
 from pathlib import Path
@@ -23,7 +24,7 @@ from pydantic_ai.usage import RunUsage
 from pydantic_settings import BaseSettings
 from pydantic_settings.main import SettingsConfigDict
 
-from dzai.logging_utils import logger
+from dzai.logging_utils import logger, set_level
 from dzai.retry_utils import create_retrying_client, google_retrying_client
 from dzai.tools.registry import todo_toolset
 
@@ -164,13 +165,18 @@ async def main(agent_name: str, query: str) -> None:
     if "web_search" in agent_spec.builtin_tools:
         builtin_tools.append(WebSearchTool())
 
+    toolsets = []
+    # ToDo: Should be an enum and should come from agent validation
+    if "todo" in agent_spec.tools:
+        toolsets.append(todo_toolset())
+
     agent = Agent(
         model=agent_spec.provider_model,
         instructions=agent_spec.instructions,
         name=agent_spec.name,
         tools=agent_spec.all_tools,
         # TODO: This should be from the registry
-        toolsets=[todo_toolset()],
+        toolsets=toolsets,
         # TODO: This should be from the registry
         builtin_tools=builtin_tools,
     )
@@ -206,14 +212,18 @@ async def main(agent_name: str, query: str) -> None:
 )
 @click.argument("agent_name", required=True)
 @click.option("-q", "--query", help="Query to send to the agent", required=True)
-def cli(agent_name: str, query: str) -> None:
+@click.option("-v", "--verbose", help="Provide more verbose looging", default=False, is_flag=True)
+def cli(agent_name: str, query: str, verbose: bool) -> None:
     """
     Run an agent from the agents folder
 
     Usage:
         # Note that name after agent is the name of the yml file in the agents folder.
-        uv run agent test_agent_config -q "hello"
+        uv run agent api-research-agent -q "hello"
+        uv run agent api-research-agent -q "hello" -v # To trigger DEBUG logging
     """
+    if verbose:
+        set_level(logging.DEBUG, logger=logger)
     asyncio.run(main(agent_name, query))
 
 
