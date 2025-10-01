@@ -1,15 +1,17 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from datetime import datetime
 from pathlib import Path
+from typing import ClassVar
 
 import click
 import yaml
 from pydantic import BaseModel, Field
+from pydantic.functional_validators import field_validator
 from pydantic.types import SecretStr
-from pydantic_ai import Agent
+from pydantic_ai import Agent, RunContext
 from pydantic_ai.builtin_tools import AbstractBuiltinTool, WebSearchTool
 from pydantic_ai.models.anthropic import AnthropicModel
 from pydantic_ai.models.google import GoogleModel
@@ -42,7 +44,11 @@ class ModelSettingsSpec(BaseModel):
 
 
 class AgentSpec(BaseModel):
-    """Enhanced specification for pydantic-ai Agent configuration"""
+    """Specification for pydantic-ai Agent"""
+
+    # Class variable - NOT a Pydantic field
+    # This allows us to use this variable within a class method without creating an instance first.
+    agent_root_dir: ClassVar[Path] = Path(__file__).resolve().parent / "agents"
 
     # Core parameters
     model: str = Field(..., description="LLM model identifier")
@@ -59,17 +65,23 @@ class AgentSpec(BaseModel):
     tools: list[str] = []
     builtin_tools: list[str] = []
 
+    # Agents as tools
+    agent_tools: list[Callable] = []
+
     # Env variables
     anthropic_api_key: SecretStr | None = None
 
     gemini_api_key: SecretStr | None = None
 
-    @staticmethod
-    def from_config(
-        config_file: Path, *, anthropic_api_key: SecretStr | None = None, gemini_api_key: SecretStr | None = None
+    @classmethod
+    def from_agent(
+        cls, agent_name: str, *, anthropic_api_key: SecretStr | None = None, gemini_api_key: SecretStr | None = None
     ) -> AgentSpec:
         """Load agent specification from YAML file"""
-        with config_file.open() as cf:
+        config_path = cls.agent_root_dir / f"{agent_name}.yml"
+        assert config_path.exists(), f"Config file does not exist at {config_path}."
+
+        with config_path.open() as cf:
             yaml_spec = yaml.safe_load(cf)
             return AgentSpec.model_validate(
                 {**yaml_spec, "gemini_api_key": gemini_api_key, "anthropic_api_key": anthropic_api_key}
@@ -93,30 +105,77 @@ class AgentSpec(BaseModel):
             case _:
                 raise ValueError(f"Unsupported model type: {self.model}")
 
+    @property
+    def all_tools(self) -> list[Callable]:
+        return self.agent_tools
+
+    @field_validator("agent_tools", mode="before")
+    @classmethod
+    def _agent_tool(cls, agent_tools: list[str]) -> list[Callable]:
+        """
+        We want to take agent name as input in the YML file but convert
+        to a callable that can be input into the Pydantic Agent(...)
+        """
+        tools = []
+        for tool in agent_tools:
+            assert Path(cls.agent_root_dir / f"{tool}.yml").exists(), (
+                f"Agent tool {tool} does not exist in dir: {cls.agent_root_dir}."
+            )
+            tools.append(AgentSpec.from_agent(tool)._as_tool())
+        return tools
+
+    def _as_tool(self) -> Callable:
+        """
+        Convert this agent spec into a tool function
+        All the metaprogramming is required to send the correct function annotations.
+        """
+
+        async def agent_tool(ctx: RunContext[None], query: str) -> str:
+            agent = Agent(
+                model=self.provider_model,
+                instructions=self.instructions,
+                name=self.name,
+            )
+
+            result = await agent.run(query, usage=ctx.usage)
+            return result.output
+
+        agent_tool.__name__ = f"{self.name.lower().replace('-', '_')}_agent"
+        agent_tool.__doc__ = f"""
+            Run the {self.name} agent.
+            {self.instructions[:200]}...
+
+            Args:
+                query: Query to send to the agent
+            """
+
+        return agent_tool
+
 
 async def main(agent_name: str, query: str) -> None:
     """Load and run agent from YAML configuration"""
 
-    config_file_yml = Path(__file__).resolve().parent / "agents" / f"{agent_name}.yml"
-
     settings = Settings()
-
-    assert config_file_yml.exists(), (
-        f"Error: Agent configuration file '{agent_name}.yml'  not found in {config_file_yml.parent} directory."
-    )
-    agent_spec = AgentSpec.from_config(config_file_yml, gemini_api_key=settings.GEMINI_API_KEY)
+    agent_spec = AgentSpec.from_agent(agent_name, gemini_api_key=settings.GEMINI_API_KEY)
 
     # Prepare builtin tools
     builtin_tools: Sequence[AbstractBuiltinTool] = []
+    # ToDo: Make this an enum and the loading should be part of AgentSpec validation
     if "web_search" in agent_spec.builtin_tools:
         builtin_tools.append(WebSearchTool())
+
+    toolsets = []
+    # ToDo: Should be an enum and should come from agent validation
+    if "todo" in agent_spec.tools:
+        toolsets.append(todo_toolset())
 
     agent = Agent(
         model=agent_spec.provider_model,
         instructions=agent_spec.instructions,
         name=agent_spec.name,
+        tools=agent_spec.all_tools,
         # TODO: This should be from the registry
-        toolsets=[todo_toolset()],
+        toolsets=toolsets,
         # TODO: This should be from the registry
         builtin_tools=builtin_tools,
     )
@@ -158,7 +217,9 @@ def cli(agent_name: str, query: str) -> None:
 
     Usage:
         # Note that name after agent is the name of the yml file in the agents folder.
-        uv run agent test_agent_config -q "hello"
+        uv run agent api-research-agent -q "hello"
+
+        LOG_LEVEL=debug uv run agent api-research-agent -q "hello" # Enable debug logging
     """
     asyncio.run(main(agent_name, query))
 
