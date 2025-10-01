@@ -218,7 +218,8 @@ def cli(agent_name: str, query: str) -> None:
     Usage:
         # Note that name after agent is the name of the yml file in the agents folder.
         uv run agent api-research-agent -q "hello"
-        uv run agent api-research-agent -q "hello" -v # To trigger DEBUG logging
+
+        LOG_LEVEL=debug uv run agent api-research-agent -q "hello" # Enable debug logging
     """
     asyncio.run(main(agent_name, query))
 

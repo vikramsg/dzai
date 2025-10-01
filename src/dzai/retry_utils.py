@@ -71,6 +71,7 @@ def google_retrying_client(*, api_key: SecretStr, async_retrying_transport: Call
     transport = async_retrying_transport()
 
     async_client_args = {"transport": transport}
+    # This hacky implementation is required to enable Gemini to emit debug logs
     if os.getenv("LOG_LEVEL", None) == "debug":
         async_client_args = {
             "transport": transport,
