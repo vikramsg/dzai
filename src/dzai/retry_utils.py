@@ -1,11 +1,14 @@
+import os
 from collections.abc import Callable
 
 from google.genai import Client
 from google.genai.types import HttpOptions
-from httpx import AsyncClient, HTTPStatusError, Response
+from httpx import AsyncClient, HTTPStatusError, Request, Response
 from pydantic.types import SecretStr
 from pydantic_ai.retries import AsyncTenacityTransport, RetryConfig, wait_retry_after
 from tenacity import retry_if_exception_type, stop_after_attempt, wait_exponential
+
+from dzai.logging_utils import logger
 
 
 def _retrying_transport() -> AsyncTenacityTransport:
@@ -33,6 +36,22 @@ def _retrying_transport() -> AsyncTenacityTransport:
     )
 
 
+async def _log_request(request: Request) -> None:
+    """Log request details including body"""
+    logger.debug(f"Request: {request.method} {request.url}")
+    logger.debug(f"Request headers: {dict(request.headers)}")
+    if request.content:
+        logger.debug(f"Request body: {request.content.decode('utf-8', errors='replace')}")
+
+
+async def _log_response(response: Response) -> None:
+    """Log response details including body"""
+    logger.debug(f"Response status: {response.status_code}")
+    logger.debug(f"Response headers: {dict(response.headers)}")
+    if response.content:
+        logger.debug(f"Response body:{response.content.decode('utf-8', errors='replace')[:1000]}...")
+
+
 def create_retrying_client(*, async_retrying_transport_callable: Callable = _retrying_transport) -> AsyncClient:
     """
     Create a client with smart retry handling for multiple error types.
@@ -51,9 +70,14 @@ def google_retrying_client(*, api_key: SecretStr, async_retrying_transport: Call
     """
     transport = async_retrying_transport()
 
+    async_client_args = {"transport": transport}
+    if os.getenv("LOG_LEVEL", None) == "debug":
+        async_client_args = {
+            "transport": transport,
+            "event_hooks": {"request": [_log_request], "response": [_log_response]},
+        }
+
     return Client(
         api_key=api_key.get_secret_value(),
-        http_options=HttpOptions(
-            async_client_args={"transport": transport}
-        ),
+        http_options=HttpOptions(async_client_args=async_client_args),
     )

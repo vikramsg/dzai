@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import logging
 from collections.abc import Callable, Sequence
 from datetime import datetime
 from pathlib import Path
@@ -24,7 +23,7 @@ from pydantic_ai.usage import RunUsage
 from pydantic_settings import BaseSettings
 from pydantic_settings.main import SettingsConfigDict
 
-from dzai.logging_utils import logger, set_level
+from dzai.logging_utils import logger
 from dzai.retry_utils import create_retrying_client, google_retrying_client
 from dzai.tools.registry import todo_toolset
 
@@ -212,8 +211,7 @@ async def main(agent_name: str, query: str) -> None:
 )
 @click.argument("agent_name", required=True)
 @click.option("-q", "--query", help="Query to send to the agent", required=True)
-@click.option("-v", "--verbose", help="Provide more verbose looging", default=False, is_flag=True)
-def cli(agent_name: str, query: str, verbose: bool) -> None:
+def cli(agent_name: str, query: str) -> None:
     """
     Run an agent from the agents folder
 
@@ -222,8 +220,6 @@ def cli(agent_name: str, query: str, verbose: bool) -> None:
         uv run agent api-research-agent -q "hello"
         uv run agent api-research-agent -q "hello" -v # To trigger DEBUG logging
     """
-    if verbose:
-        set_level(logging.DEBUG, logger=logger)
     asyncio.run(main(agent_name, query))
 
 

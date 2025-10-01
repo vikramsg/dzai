@@ -1,4 +1,5 @@
 import logging
+import os
 
 
 def _logger(log_level: int) -> logging.Logger:
@@ -6,14 +7,6 @@ def _logger(log_level: int) -> logging.Logger:
     return logging.getLogger()
 
 
-def set_level(log_level: int, *, logger: logging.Logger) -> None:
-    """Set level of the logger"""
-    logger.setLevel(log_level)
-
-    # HTTPX/HTTPCORE are used by Anthropic, OpenAI, and Google GenAI for HTTP requests
-    # Enable debug logging to see HTTP request/response details including POST bodies
-    logging.getLogger("httpx").setLevel(log_level)
-    logging.getLogger("httpcore").setLevel(log_level)
-
-
-logger = _logger(log_level=logging.INFO)
+logger = (
+    _logger(log_level=logging.DEBUG) if os.getenv("LOG_LEVEL", None) == "debug" else _logger(log_level=logging.INFO)
+)
