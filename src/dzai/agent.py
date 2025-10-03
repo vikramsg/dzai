@@ -1,25 +1,33 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Callable, Sequence
+from collections.abc import AsyncIterator, Callable, Sequence
 from datetime import datetime
 from pathlib import Path
-from typing import ClassVar
+from typing import Any, ClassVar
 
 import click
 import yaml
 from pydantic import BaseModel, Field
 from pydantic.functional_validators import field_validator
 from pydantic.types import SecretStr
-from pydantic_ai import Agent, PartDeltaEvent, PartStartEvent, RunContext
+from pydantic_ai import Agent, RunContext
+from pydantic_ai._run_context import AgentDepsT
 from pydantic_ai.builtin_tools import AbstractBuiltinTool, WebSearchTool
-from pydantic_ai.messages import TextPartDelta, ThinkingPartDelta, ToolCallPartDelta
+from pydantic_ai.messages import (
+    PartDeltaEvent,
+    PartStartEvent,
+    TextPartDelta,
+    ThinkingPartDelta,
+    ToolCallPartDelta,
+)
 from pydantic_ai.models.anthropic import AnthropicModel
 from pydantic_ai.models.google import GoogleModel
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.anthropic import AnthropicProvider
 from pydantic_ai.providers.google import GoogleProvider
 from pydantic_ai.providers.openai import OpenAIProvider
+from pydantic_ai.run import AgentRun
 from pydantic_ai.usage import RunUsage
 from pydantic_settings import BaseSettings
 from pydantic_settings.main import SettingsConfigDict
@@ -153,6 +161,51 @@ class AgentSpec(BaseModel):
         return agent_tool
 
 
+async def _agent_run_results(run: AsyncIterator[AgentRun[AgentDepsT, Any]], *, agent: Agent) -> None:
+    step_count = 0
+    async for node in run:
+        step_count += 1
+        logger.debug(f"--- Step {step_count} ---")
+
+        if agent.is_user_prompt_node(node):
+            logger.debug(f"👤 User Prompt: {node.user_prompt}")
+
+        elif agent.is_model_request_node(node):
+            logger.debug("🤖 Model Request Node")
+
+            async with node.stream(run.ctx) as stream:
+                thinking_buffer = ""
+                text_buffer = ""
+                async for event in stream:
+                    if isinstance(event, PartStartEvent):
+                        logger.debug(f"📝 Starting part {event.index}: {type(event.part).__name__}")
+
+                    elif isinstance(event, PartDeltaEvent):
+                        if isinstance(event.delta, ThinkingPartDelta):
+                            thinking_buffer += event.delta.content_delta
+                        elif isinstance(event.delta, TextPartDelta):
+                            text_buffer += event.delta.content_delta
+                        elif isinstance(event.delta, ToolCallPartDelta):
+                            logger.debug(f"🔧 Tool call: {event.delta}")
+
+                if thinking_buffer:
+                    logger.info(f"🤔 Thinking: {thinking_buffer[:500]}{'...' if len(thinking_buffer) > 500 else ''}")
+                if text_buffer:
+                    logger.debug(f"💬 Response: {text_buffer[:200]}{'...' if len(text_buffer) > 200 else ''}")
+
+        elif agent.is_call_tools_node(node):
+            logger.debug("⚙️ Calling Tools Node")
+
+            async with node.stream(run.ctx) as handle_stream:
+                async for event in handle_stream:
+                    logger.debug(f"   🔧 Tool event: {type(event).__name__}: {event}")
+
+        else:
+            logger.info(f"❓ Unknown node type: {type(node).__name__}")
+
+    logger.info(f"🎯 Agent execution completed in {step_count} steps")
+
+
 async def main(agent_name: str, query: str) -> None:
     """Load and run agent from YAML configuration"""
 
@@ -184,47 +237,9 @@ async def main(agent_name: str, query: str) -> None:
     logger.info(f"Starting agent run for Agent: {agent_spec.name}.")
     usage = RunUsage()
 
-    logger.info("🚀 Starting detailed agent execution...")
-
     async with agent.iter(query, usage=usage) as run:
-        step_count = 0
-        async for node in run:
-            step_count += 1
-            logger.info(f"--- Step {step_count} ---")
+        await _agent_run_results(run, agent=agent)
 
-            if agent.is_user_prompt_node(node):
-                logger.info(f"👤 User Prompt: {node.user_prompt}")
-
-            elif agent.is_model_request_node(node):
-                logger.info("🤖 Model Request Node")
-
-                async with node.stream(run.ctx) as stream:
-                    current_response = ""
-                    async for event in stream:
-                        if isinstance(event, PartStartEvent):
-                            logger.info(f"📝 Starting part {event.index}: {type(event.part).__name__}")
-
-                        elif isinstance(event, PartDeltaEvent):
-                            if isinstance(event.delta, ThinkingPartDelta):
-                                logger.info(f"🤔 Thinking: {event.delta.content_delta}")
-                            elif isinstance(event.delta, TextPartDelta):
-                                current_response += event.delta.content_delta
-                                logger.info(f"💬 Response chunk: {event.delta.content_delta}")
-                            elif isinstance(event.delta, ToolCallPartDelta):
-                                logger.info(f"🔧 Tool call delta: {event.delta}")
-
-            elif agent.is_call_tools_node(node):
-                logger.info("⚙️ Calling Tools Node")
-                logger.info(f"   Tools to call: {[call.tool_name for call in node.tool_calls]}")
-
-                for tool_call in node.tool_calls:
-                    logger.info(f"   🔧 Executing {tool_call.tool_name}")
-                    logger.info(f"      Args: {tool_call.args}")
-
-            else:
-                logger.info(f"❓ Unknown node type: {type(node).__name__}")
-
-    logger.info(f"🎯 Agent execution completed in {step_count} steps")
     logger.info(f"📊 Final result type: {type(run.result)}")
 
     logger.info(
