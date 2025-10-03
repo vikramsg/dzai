@@ -11,8 +11,9 @@ import yaml
 from pydantic import BaseModel, Field
 from pydantic.functional_validators import field_validator
 from pydantic.types import SecretStr
-from pydantic_ai import Agent, RunContext
+from pydantic_ai import Agent, PartDeltaEvent, PartStartEvent, RunContext
 from pydantic_ai.builtin_tools import AbstractBuiltinTool, WebSearchTool
+from pydantic_ai.messages import TextPartDelta, ThinkingPartDelta, ToolCallPartDelta
 from pydantic_ai.models.anthropic import AnthropicModel
 from pydantic_ai.models.google import GoogleModel
 from pydantic_ai.models.openai import OpenAIChatModel
@@ -182,7 +183,49 @@ async def main(agent_name: str, query: str) -> None:
 
     logger.info(f"Starting agent run for Agent: {agent_spec.name}.")
     usage = RunUsage()
-    result = await agent.run(query, usage=usage)
+
+    logger.info("🚀 Starting detailed agent execution...")
+
+    async with agent.iter(query, usage=usage) as run:
+        step_count = 0
+        async for node in run:
+            step_count += 1
+            logger.info(f"--- Step {step_count} ---")
+
+            if agent.is_user_prompt_node(node):
+                logger.info(f"👤 User Prompt: {node.user_prompt}")
+
+            elif agent.is_model_request_node(node):
+                logger.info("🤖 Model Request Node")
+
+                async with node.stream(run.ctx) as stream:
+                    current_response = ""
+                    async for event in stream:
+                        if isinstance(event, PartStartEvent):
+                            logger.info(f"📝 Starting part {event.index}: {type(event.part).__name__}")
+
+                        elif isinstance(event, PartDeltaEvent):
+                            if isinstance(event.delta, ThinkingPartDelta):
+                                logger.info(f"🤔 Thinking: {event.delta.content_delta}")
+                            elif isinstance(event.delta, TextPartDelta):
+                                current_response += event.delta.content_delta
+                                logger.info(f"💬 Response chunk: {event.delta.content_delta}")
+                            elif isinstance(event.delta, ToolCallPartDelta):
+                                logger.info(f"🔧 Tool call delta: {event.delta}")
+
+            elif agent.is_call_tools_node(node):
+                logger.info("⚙️ Calling Tools Node")
+                logger.info(f"   Tools to call: {[call.tool_name for call in node.tool_calls]}")
+
+                for tool_call in node.tool_calls:
+                    logger.info(f"   🔧 Executing {tool_call.tool_name}")
+                    logger.info(f"      Args: {tool_call.args}")
+
+            else:
+                logger.info(f"❓ Unknown node type: {type(node).__name__}")
+
+    logger.info(f"🎯 Agent execution completed in {step_count} steps")
+    logger.info(f"📊 Final result type: {type(run.result)}")
 
     logger.info(
         f"Input tokens: {usage.input_tokens}, Output tokens: {usage.output_tokens}, "
@@ -193,14 +236,14 @@ async def main(agent_name: str, query: str) -> None:
     output_file = Path("outputs") / f"output_{datetime.now().isoformat(timespec='seconds')}.md"
     output_file.parent.mkdir(parents=True, exist_ok=True)
     with output_file.open("w") as of:
-        of.write(result.output)
+        of.write(run.result.output)
 
     logger.info(f"Output written to {output_file}.")
 
     # Write message history to file
     messages_file = Path("outputs") / f"messages_{datetime.now().isoformat(timespec='seconds')}.json"
     with messages_file.open("wb") as mf:
-        mf.write(result.all_messages_json())
+        mf.write(run.result.all_messages_json())
 
     logger.info(f"Message history written to {messages_file}.")
 

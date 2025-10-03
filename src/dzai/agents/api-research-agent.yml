@@ -1,4 +1,4 @@
-model: "anthropic:claude-sonnet-4-0"
+model: "anthropic:claude-sonnet-4-5"
 
 name: "api-research-agent"
 
