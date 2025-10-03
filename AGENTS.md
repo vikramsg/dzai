@@ -8,8 +8,9 @@
     - Prefer functions over classes.
     - Explicit over implicit.
     - Modern practices `str | None` over `Optional[str]`.
-    - Always do propert typing. Prefer using concrete types than using Any.
-    - Again, DO NOT use blanket ANY. Prefer using concrete types.
+    - Always prefer proper typing. 
+        - Prefer using concrete types than using Any.
+        - Again, DO NOT use blanket ANY. Prefer using concrete types.
 3. DO NOT introduce any `try-except` unless you are explicitly asked.
 4. THINK HARD. Write simple code. Understand the requirements properly.
 5. You do not always know the lates API's. Use your web search tool to understand what is required.
