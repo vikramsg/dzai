@@ -47,13 +47,36 @@ The default log level is set to `INFO`. To run an agent with `DEBUG` level, eith
 LOG_LEVEL=debug uv run dzai ...
 ```
 
+## Anthropic
+
+### Extended Thinking
+
+To enable extended thinking for Anthropic models, add the `anthropic_thinking` configuration to your agent's YAML file:
+
+```yaml
+model_settings:
+  anthropic_thinking:
+    type: "enabled"
+    budget_tokens: 16000
+```
+
+**Configuration:**
+- `budget_tokens`: Minimum 1,024 tokens (recommended: 16,000+ for complex tasks, up to 128,000)
+- Compatible models: Claude Opus 4.1, Opus 4, Sonnet 4.5, Sonnet 4, Sonnet 3.7
+
+**Important limitations:**
+- Cannot use thinking with structured output (`BaseModel` as `output_type`)
+- Use `PromptedOutput` instead if you need structured output with thinking
+
+Thinking logs will be captured and displayed via the existing `ThinkingPartDelta` handler in the agent streaming logic.
+
 ## Gemini
 
-Lots of workaround are required to make Gemini work. 
+Lots of workaround are required to make Gemini work.
 
 1. The default retring client that works for Anthropic and OpenAI does not work for Gemini since Pydantic has its own custom implementation for Gemini.
-    
-    - So we need a special retrying client for Gemini. 
+
+    - So we need a special retrying client for Gemini.
     - We need `LOG_LEVEL` to be used via `env` since we have to modify the retrying client to get the bare minimum log messages.
 
 2. Gemini does not allow combining a tool and search. So we have created a separate agent, that only does search. We need to refine this to provide pure search results.

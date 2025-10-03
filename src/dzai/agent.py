@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import AsyncIterator, Callable, Sequence
+from collections.abc import Callable, Sequence
 from datetime import datetime
 from pathlib import Path
-from typing import Any, ClassVar
+from typing import ClassVar
 
 import click
 import yaml
@@ -12,7 +12,6 @@ from pydantic import BaseModel, Field
 from pydantic.functional_validators import field_validator
 from pydantic.types import SecretStr
 from pydantic_ai import Agent, RunContext
-from pydantic_ai._run_context import AgentDepsT
 from pydantic_ai.builtin_tools import AbstractBuiltinTool, WebSearchTool
 from pydantic_ai.messages import (
     PartDeltaEvent,
@@ -161,7 +160,13 @@ class AgentSpec(BaseModel):
         return agent_tool
 
 
-async def _agent_run_results(run: AsyncIterator[AgentRun[AgentDepsT, Any]], *, agent: Agent) -> None:
+async def _agent_run_results[AgentDepsT, AgentResultT](
+    run: AgentRun[AgentDepsT, AgentResultT], *, agent: Agent[AgentDepsT, AgentResultT]
+) -> None:
+    """
+    The complex typing is inherited from the Pydantic way of doing typing.
+    I am not sure what the more correct way of doing this is without necessarily defining deps and result types.
+    """
     step_count = 0
     async for node in run:
         step_count += 1
