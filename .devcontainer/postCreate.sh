@@ -18,7 +18,4 @@ echo -e 'ZSH_DOTENV_PROMPT=false\n'"$(cat ~/.zshrc 2>/dev/null || echo '')" > ~/
 echo "Installing CLI tools..."
 npm install -g @openai/codex @anthropic-ai/claude-code
 
-echo "Fixing workspace ownership..."
-sudo chown -R vscode:vscode /workspaces
-
 echo "postCreate script completed successfully!"

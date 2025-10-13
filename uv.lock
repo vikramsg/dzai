@@ -277,6 +277,7 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "prek" },
+    { name = "pyscn" },
     { name = "ruff" },
     { name = "ty" },
 ]
@@ -291,6 +292,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "prek", specifier = ">=0.2.1" },
+    { name = "pyscn", specifier = ">=1.0.0" },
     { name = "ruff", specifier = ">=0.13.1" },
     { name = "ty", specifier = ">=0.0.1a21" },
 ]
@@ -1271,6 +1273,17 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/e8/52/d87eba7cb129b81563019d1679026e7a112ef76855d6159d24754dbd2a51/pyperclip-1.11.0.tar.gz", hash = "sha256:244035963e4428530d9e3a6101a1ef97209c6825edab1567beac148ccc1db1b6", size = 12185, upload-time = "2025-09-26T14:40:37.245Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/df/80/fc9d01d5ed37ba4c42ca2b55b4339ae6e200b456be3a1aaddf4a9fa99b8c/pyperclip-1.11.0-py3-none-any.whl", hash = "sha256:299403e9ff44581cb9ba2ffeed69c7aa96a008622ad0c46cb575ca75b5b84273", size = 11063, upload-time = "2025-09-26T14:40:36.069Z" },
+]
+
+[[package]]
+name = "pyscn"
+version = "1.0.0"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/57/2b/1bfcb4b330ccaf075c98fac530ec30e7ce9440059fd36fb4f5ce20a0a387/pyscn-1.0.0-py3-none-macosx_10_9_x86_64.whl", hash = "sha256:1e0161613dfffd4f4217e42a82dd657ddbdca349533015d4c191a2411df0418e", size = 4730069, upload-time = "2025-10-05T12:34:23.981Z" },
+    { url = "https://files.pythonhosted.org/packages/0f/82/178940a95252d0ede5c642fc93e6d41982a34913b8ee1ef3a5ef28e03d25/pyscn-1.0.0-py3-none-macosx_11_0_arm64.whl", hash = "sha256:f06cd0629f164f98df6eed30a18597a9272e63ec763f7d2a15e1b4317c9551a5", size = 4400668, upload-time = "2025-10-05T12:34:25.606Z" },
+    { url = "https://files.pythonhosted.org/packages/eb/4b/72dfbfe08742528a11e67db7d239361d90124b33a13991ae78adde815ffa/pyscn-1.0.0-py3-none-manylinux_2_17_x86_64.whl", hash = "sha256:2e9b36ae0f87e3577e608bffff287926a97ce850f9ee7c432816bc496aa35f26", size = 4737974, upload-time = "2025-10-05T12:34:27.23Z" },
+    { url = "https://files.pythonhosted.org/packages/3b/ec/5243e9f5cf2af2c8c5361763f2f24f80410dfd927f185b21326c37a2318b/pyscn-1.0.0-py3-none-win_amd64.whl", hash = "sha256:19939377f2a5c0a99b6a9dd8846054486e6379a5907b47eb8a7f56ae454fd35d", size = 4928047, upload-time = "2025-10-05T12:34:28.782Z" },
 ]
 
 [[package]]
