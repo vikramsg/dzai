@@ -21,8 +21,7 @@
     "ghcr.io/devcontainers-contrib/features/zsh-plugins:0": {
       "plugins": "python git zsh-autosuggestions zsh-syntax-highlighting dotenv",
       "omzPlugins": "https://github.com/zsh-users/zsh-autosuggestions.git https://github.com/zsh-users/zsh-syntax-highlighting.git"
-    },
-    "ghcr.io/devcontainers-extra/features/homebrew-package:1": {}
+    }
   },
   "mounts": [
     "type=bind,source=${localEnv:HOME}/.ssh,target=/home/vscode/.ssh_host,consistency=cached,readonly=true",
@@ -68,6 +67,8 @@
   // The groupmod to GID 20 attempts to match the host's "staff" group but fails
   // because GID 20 is already taken by the "dialout" group in Debian. This is
   // acceptable - the UID match is sufficient for file access via SSHFS.
-  "onCreateCommand": "sudo usermod -u 501 vscode && sudo groupmod -g 20 vscode || true",
+  "onCreateCommand": {
+    "usermod": "usermod -u 501 vscode && groupmod -g 20 vscode || true"
+  },
   "postCreateCommand": ".devcontainer/postCreate.sh"
 }

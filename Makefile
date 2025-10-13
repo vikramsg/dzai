@@ -1,9 +1,10 @@
-.PHONY: help build rebuild up down clean logs shell
+.PHONY: help build rebuild up down clean logs shell recreate
 
 help:
 	@echo "Available commands:"
 	@echo "  make build     - Build the devcontainer"
 	@echo "  make rebuild   - Rebuild the devcontainer from scratch (no cache)"
+	@echo "  make recreate  - Clean, rebuild, and create fresh container with postCreate"
 	@echo "  make up        - Start the devcontainer"
 	@echo "  make down      - Stop the devcontainer"
 	@echo "  make clean     - Remove devcontainer and volumes"
@@ -18,9 +19,17 @@ rebuild:
 	@echo "Rebuilding devcontainer from scratch (no cache)..."
 	devcontainer build --workspace-folder . --no-cache
 
+recreate:
+	@echo "Cleaning up existing containers..."
+	$(MAKE) clean
+	@echo "Rebuilding image from scratch..."
+	$(MAKE) rebuild
+	@echo "Creating and starting fresh container..."
+	$(MAKE) up
+
 up:
 	@echo "Starting devcontainer..."
-	devcontainer up --workspace-folder .
+	devcontainer up --workspace-folder . --remove-existing-container
 
 down:
 	@echo "Stopping devcontainer..."
