@@ -515,3 +515,7 @@ A system claiming conformance to this spec MUST:
 4. Include findings with premises, claims, rules applied, and suggestions (where relevant).
 5. Emit **NO_TRANSLATIONS**, **TRANSLATION_AMBIGUOUS**, **IMPOSSIBLE**, or **TOO_COMPLEX** as defined, when applicable.
 6. Preserve policy versions and input hashes for auditability.
+
+## Reference
+
+[AWS implementation](https://aws.amazon.com/blogs/machine-learning/minimize-generative-ai-hallucinations-with-amazon-bedrock-automated-reasoning-checks/)
