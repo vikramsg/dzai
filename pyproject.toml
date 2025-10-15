@@ -13,6 +13,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "prek>=0.2.1",
+    "pyscn>=1.0.0",
     "ruff>=0.13.1",
     "ty>=0.0.1a21",
 ]

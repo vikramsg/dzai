@@ -10,8 +10,6 @@
   "features": {
     "ghcr.io/devcontainers/features/common-utils:2": {
       "username": "vscode",
-      "uid": "1000",
-      "gid": "1000",
       "installSudo": "true"
     },
     "ghcr.io/devcontainers/features/sshd:1": {
@@ -28,8 +26,49 @@
   "mounts": [
     "type=bind,source=${localEnv:HOME}/.ssh,target=/home/vscode/.ssh_host,consistency=cached,readonly=true",
     "type=bind,source=${localEnv:HOME}/.gitconfig,target=/home/vscode/.gitconfig",
-    "source=${localEnv:HOME}/.claude.json,target=/home/vscode/.claude.json,type=bind,consistency=cached"
+    "source=${localEnv:HOME}/.claude.json,target=/home/vscode/.claude.json,type=bind,consistency=cached",
+    "type=bind,source=${localEnv:HOME}/.tmux.conf,target=/home/vscode/.tmux_host/.tmux.conf,consistency=cached,readonly=true",
+    "type=bind,source=${localEnv:HOME}/.config/nvim,target=/home/vscode/.config_host/nvim,consistency=cached,readonly=true"
   ],
   "appPort": ["2222:2222"],
+
+  // CRITICAL: Change vscode user UID from 1000 to 501 to match host user.
+  // We want the vscode user to have ownership of /workspace/dzai since otherwise git won't work in Zed.
+  //
+  // WHY UID 501 IS REQUIRED:
+  // This project runs on macOS with Colima (Docker Desktop alternative). Colima uses
+  // Lima VM which mounts the host filesystem via SSHFS. This SSHFS mount preserves
+  // the host user's UID (501 on macOS) when files are accessed from inside containers.
+  //
+  // File ownership flow:
+  //   Host macOS (UID 501) → SSHFS mount → Lima VM → Docker container
+  //   Result: /workspaces/dzai is owned by UID 501 inside the container
+  //
+  // Without this UID change:
+  //   - Container vscode user: UID 1000, GID 1000
+  //   - Workspace files: UID 501, GID 20
+  //   - Result: Permission issues, files appear as "UNKNOWN:dialout"
+  //
+  // With this UID change:
+  //   - Container vscode user: UID 501 (matches host)
+  //   - Workspace files: UID 501, GID 20
+  //   - Result: Perfect ownership match, files show as "vscode:dialout"
+  //
+  // WHY onCreateCommand IS REQUIRED:
+  // The base image (mcr.microsoft.com/devcontainers/python:3.13) already contains
+  // a vscode user with UID 1000. The common-utils feature's uid/gid parameters
+  // (lines 17-18 above) are IGNORED for existing users - they only work when
+  // creating new users.
+  //
+  // We must use onCreateCommand to manually change the UID after container creation
+  // but before other initialization (like postCreateCommand). This runs once when
+  // the container is first created.
+  //
+  // The groupmod to GID 20 attempts to match the host's "staff" group but fails
+  // because GID 20 is already taken by the "dialout" group in Debian. This is
+  // acceptable - the UID match is sufficient for file access via SSHFS.
+  "onCreateCommand": {
+    "usermod": "usermod -u 501 vscode && groupmod -g 20 vscode || true"
+  },
   "postCreateCommand": ".devcontainer/postCreate.sh"
 }
